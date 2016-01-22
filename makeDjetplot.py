@@ -1,77 +1,99 @@
 import array
+import collections
 import os
 import ROOT
 import style
 
-class Plot:
-    maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"
+class Plot(object):
+    maindir = "root://lxcms03://data3/Higgs/160121/"
     basename = "ZZ4lAnalysis.root"
     min = 0.
     max = 1.
     bins = 100
     units = ""
-    normalizationincludesfailedevents = True
 
-    def __init__(self, title, color, *CJLSTdirs):
+    def __init__(self, title, color, *CJLSTdirs, **kwargs):
+        for kwarg in kwargs:
+            if kwarg == "maindir":
+                self.maindir = kwargs[kwarg]
+            if kwarg == "basename":
+                self.basename = kwargs[kwarg]
         self.filenames = [os.path.join(self.maindir, dir, self.basename) for dir in CJLSTdirs]
         self.title = title
         self.color = color
         self.__h = None
 
-    def h(self):
-        if self.__h is not None:
+    def __hash__(self):
+        return hash((tuple(self.filenames), self.title, self.color))
+    def __str__(self):
+        return self.title
+
+    def h(self, bins = None):
+        if self.__h is not None and bins is None:
             return self.__h
+        if bins is None:
+            bins = [Bin(-1, float("inf"))]
         print self.title
         t = ROOT.TChain("ZZTree/candTree")
         for filename in self.filenames:
-            print filename, t.GetEntries()
             t.Add(filename)
         pvbf = array.array('f', [0])
         phjj = array.array('f', [0])
+        m4l = array.array('f', [0])
         MC_weight = array.array('f', [1])
         t.SetBranchAddress("pvbf_VAJHU_old", pvbf)
         t.SetBranchAddress("phjj_VAJHU_old", phjj)
+        t.SetBranchAddress("ZZMass", m4l)
 
-        h = ROOT.TH1F("h"+self.title, "D_{jet}", self.bins, self.min, self.max)
+        h = {}
+        sumofweights = {}
+        for bin in bins:
+            h[bin] = ROOT.TH1F("h"+self.title+str(bin), "D_{jet}", self.bins, self.min, self.max)
+            h[bin].SetLineColor(self.color)
+            h[bin].SetLineWidth(3)
+            sumofweights[bin] = 0
 
         length = t.GetEntries()
-        sumofweights = 0
         for i in range(length):
             t.GetEntry(i)
 
             wt = MC_weight[0]
 
-            if pvbf[0] >= 0 and phjj[0] >= 0 and not (pvbf[0] == phjj[0] == 0):
+            try:
+                Djet = (pvbf[0] / (pvbf[0] + phjj[0]))
+            except ZeroDivisionError:
+                pass
 
-                try:
-                    Djet = (pvbf[0] / (pvbf[0] + phjj[0]))
-                except ZeroDivisionError:
-                    t.Show(i)
-                    raise
+            for bin in bins:
+                if bin.min < m4l[0] < bin.max:
+                    if pvbf[0] >= 0 and phjj[0] >= 0 and not (pvbf[0] == phjj[0] == 0):
+                        h[bin].Fill(Djet, wt)
 
-                h.Fill(Djet, wt)
-                sumofweights += wt
-
-            elif self.normalizationincludesfailedevents:
-                sumofweights += wt
+                    sumofweights[bin] += wt
 
             if (i+1) % 10000 == 0 or i+1 == length:
                 print (i+1), "/", length
 
-        h.SetLineColor(self.color)
-        h.SetLineWidth(3)
-        h.Scale(1.0/sumofweights)
+        for bin in bins:
+            try:
+                h[bin].Scale(1.0/sumofweights[bin])
+            except ZeroDivisionError:
+                pass
 
-        self.__h = h
-        return h
+        if len(h) == 1:
+            self.__h = h.values()[0]
+        else:
+            self.__h = h
+        return self.__h
 
-    def addtolegend(self, tlegend):
-        tlegend.AddEntry(self.h(), self.title, "l")
+    def addtolegend(self, tlegend, option = "l"):
+        tlegend.AddEntry(self.h(), self.title, option)
 
 def makeDjetplots(*plots):
     c1 = ROOT.TCanvas()
-    legend = ROOT.TLegend(0.6, 0.7, 0.9, 0.9)
-    drawoption = ""
+    legend = ROOT.TLegend(0.6, 0.5, 0.9, 0.9)
+    legend.SetLineStyle(0)
+    legend.SetFillStyle(0)
     hstack = ROOT.THStack("hstack", "D_{jet}")
     max, min, bins, units = None, None, None, None
     for plot in plots:
@@ -84,16 +106,102 @@ def makeDjetplots(*plots):
     hstack.GetXaxis().SetTitle("D_{jet}")
     hstack.GetYaxis().SetTitle("fraction of events / %s%s" % ((max-min)/bins, " "+units if units else ""))
     legend.Draw()
-    c1.SaveAs("~/www/TEST/test.png")
+    c1.SaveAs("~/www/VBF/Djet/Djet.png")
+    c1.SaveAs("~/www/VBF/Djet/Djet.eps")
+    c1.SaveAs("~/www/VBF/Djet/Djet.root")
+    c1.SaveAs("~/www/VBF/Djet/Djet.pdf")
+
+class Bin(object):
+    def __init__(self, min, max):
+        self.min = min
+        self.max = max
+        self.center = (max+min)*.5
+        self.error = (max-min)*.5
+    def __str__(self):
+        return "%s-%s GeV" % (self.min, self.max)
+
+def makeDjettable(massbins, *plots):
+    print massbins
+    bins = [Bin(massbins[i], massbins[i+1]) for i in range(len(massbins)-1)]
+    for a in bins: print a
+
+    fraction = collections.OrderedDict()
+    x = {}
+    y = {}
+    ex = {}
+    ey = {}
+    g = {}
+    mg = ROOT.TMultiGraph()
+    legend = ROOT.TLegend(0.6, 0.5, 0.9, 0.9)
+    legend.SetLineStyle(0)
+    legend.SetLineColor(0)
+    legend.SetFillStyle(0)
+
+    for plot in plots:
+        x[plot] = array.array("d")
+        y[plot] = array.array("d")
+        ex[plot] = array.array("d")
+        ey[plot] = array.array("d")
+        fraction[plot] = collections.OrderedDict()
+
+        h = plot.h(bins)
+        for bin in bins:
+            fraction[plot][bin] = h[bin].Integral(51, 100)
+            x[plot].append(bin.center)
+            y[plot].append(fraction[plot][bin])
+            ex[plot].append(bin.error)
+            ey[plot].append(0)
+
+        g[plot] = ROOT.TGraphErrors(len(bins), x[plot], y[plot], ex[plot], ey[plot])
+        mg.Add(g[plot])
+        g[plot].SetLineColor(plot.color)
+        g[plot].SetMarkerColor(plot.color)
+        legend.AddEntry(g[plot], plot.title, "lp")
+
+    c1 = ROOT.TCanvas()
+    mg.Draw("AP")
+    mg.GetXaxis().SetTitle("m_{4l}")
+    mg.GetYaxis().SetTitle("fraction of events with D_{jet}>0.5")
+    legend.Draw()
+    c1.SaveAs("~/www/VBF/Djet/fraction.png")
+    c1.SaveAs("~/www/VBF/Djet/fraction.eps")
+    c1.SaveAs("~/www/VBF/Djet/fraction.root")
+    c1.SaveAs("~/www/VBF/Djet/fraction.pdf")
+
+    #http://stackoverflow.com/a/9536084
+    header_format ="{:>15}" * (len(bins) + 1)
+    row_format ="{:>15}" + "{:14.2f}%" * (len(bins))
+    print header_format.format("", *bins)
+    for plot in plots:
+        print row_format.format(plot, *(fraction[plot][bin]*100 for bin in fraction[plot]))
+
 
 if __name__ == "__main__":
-    plots = (
-             Plot("VBF",  1,              "VBFH125"),
-             Plot("H+jj", 2,              "ggH125"),
-             Plot("ZH",   ROOT.kGreen-6,  "ZH125"),
-             Plot("WH",   3,              "WplusH125", "WminusH125"),
-             Plot("ttH",  4,              "ttH125"),
-             #Plot("qqZZ", 6,              "???"),
-             Plot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", "ggZZ4e", "ggZZ4mu", "ggZZ4tau"),
-            )
-    makeDjetplots(*plots)
+    forplot = False
+    fortable = True
+    if forplot:
+        plots = (
+                 Plot("VBF",  1,              "VBF125"),
+                 Plot("H+jj", 2,              "ggH125"),
+                 Plot("ZH",   ROOT.kGreen-6,  "ZH125"),
+                 Plot("WH",   3,              "WplusH125"),
+                 Plot("ttH",  4,              "ttH125",     maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"),
+                 Plot("qqZZ", 6,              "ZZTo4l"),
+                 Plot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", 
+                                              #"ggZZ4e", "ggZZ4mu", "ggZZ4tau"
+                                            ),
+                )
+        makeDjetplots(*plots)
+    elif fortable:
+        plots = (
+                 Plot("VBF",  1,              "VBF1000", "VBF115", "VBF124", "VBF125", "VBF126", "VBF130", "VBF135", "VBF140", "VBF155", "VBF160", "VBF165", "VBF170", "VBF175", "VBF200", "VBF210", "VBF230", "VBF250", "VBF270", "VBF300", "VBF350", "VBF400", "VBF450", "VBF500", "VBF550", "VBF600", "VBF700", "VBF750", "VBF800", "VBF900"),
+                 Plot("H+jj", 2,              "ggH1000", "ggH115", "ggH120", "ggH124", "ggH125", "ggH126", "ggH130", "ggH135", "ggH140", "ggH145", "ggH150", "ggH155", "ggH160", "ggH165", "ggH170", "ggH175", "ggH180", "ggH190", "ggH210", "ggH230", "ggH250", "ggH270", "ggH300", "ggH350", "ggH400", "ggH450", "ggH500", "ggH550", "ggH600", "ggH700", "ggH800", "ggH900"),
+                 Plot("ZH",   ROOT.kGreen-6,  "ZH120", "ZH124", "ZH125", "ZH145", "ZH150", "ZH165", "ZH180", "ZH200", "ZH300", "ZH400"),
+                 Plot("WH",   3,              "WplusH115", "WplusH120", "WplusH125", "WplusH130", "WplusH135", "WplusH140", "WplusH145", "WplusH150", "WplusH155", "WplusH160", "WplusH165", "WplusH175", "WplusH180", "WplusH190", "WplusH210", "WplusH230", "WplusH250", "WplusH270", "WplusH300", "WplusH350", "WplusH400", "WminusH115", "WminusH120", "WminusH124", "WminusH125", "WminusH126", "WminusH130", "WminusH135", "WminusH140", "WminusH145", "WminusH150", "WminusH155", "WminusH160", "WminusH165", "WminusH170", "WminusH175", "WminusH180", "WminusH190", "WminusH210", "WminusH230", "WminusH250", "WminusH270", "WminusH300", "WminusH350", "WminusH400"),
+                 Plot("ttH",  4,              "ttH125",     maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"),
+                 Plot("qqZZ", 6,              "ZZTo4l"),
+                 Plot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau",
+                                                #"ggZZ4e", "ggZZ4mu", "ggZZ4tau"
+                                              ),
+                )
+        makeDjettable([100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 300, 400, 500, 600, 700, 800, 900, 1000], *plots)
