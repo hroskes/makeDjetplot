@@ -54,6 +54,7 @@ class Plot(object):
             sumofweights[bin] = 0
 
         length = t.GetEntries()
+
         for i in range(length):
             t.GetEntry(i)
 
@@ -168,13 +169,20 @@ def makeDjettable(massbins, *plots):
     c1.SaveAs("~/www/VBF/Djet/fraction.root")
     c1.SaveAs("~/www/VBF/Djet/fraction.pdf")
 
-    #http://stackoverflow.com/a/9536084
-    header_format ="{:>15}" * (len(bins) + 1)
-    row_format ="{:>15}" + "{:14.2f}%" * (len(bins))
-    print header_format.format("", *bins)
-    for plot in plots:
-        print row_format.format(plot, *(fraction[plot][bin]*100 for bin in fraction[plot]))
+    print r"\begin{center}"
+    print r"\begin{tabular}{ |%s| }" % ("|".join("c" * (len(plots)+1)))
 
+    #http://stackoverflow.com/a/9536084
+    header_format = " & ".join(["{:>15}"] * (len(plots) + 1)) + r" \\"
+    row_format = " & ".join(["{:>15}"] + [r"{:14.2f}\%"] * (len(plots))) + r"\\"
+    print r"\hline"
+    print header_format.format("", *plots)
+    for bin in bins:
+        print r"\hline"
+        print row_format.format(bin, *(fraction[plot][bin]*100 for plot in plots))
+    print r"\hline"
+    print r"\end{tabular}"
+    print r"\end{center}"
 
 if __name__ == "__main__":
     forplot = False
