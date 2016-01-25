@@ -131,9 +131,10 @@ def makeDjettable(massbins, *plots):
     y = {}
     ex = {}
     ey = {}
+    nbins = {}
     g = {}
     mg = ROOT.TMultiGraph()
-    legend = ROOT.TLegend(0.6, 0.5, 0.9, 0.9)
+    legend = ROOT.TLegend(0.6, 0.4, 0.9, 0.8)
     legend.SetLineStyle(0)
     legend.SetLineColor(0)
     legend.SetFillStyle(0)
@@ -143,17 +144,20 @@ def makeDjettable(massbins, *plots):
         y[plot] = array.array("d")
         ex[plot] = array.array("d")
         ey[plot] = array.array("d")
+        nbins[plot] = 0
         fraction[plot] = collections.OrderedDict()
 
         h = plot.h(bins)
         for bin in bins:
             fraction[plot][bin] = h[bin].Integral(51, 100)
+            if plot.title == "ttH" and bin.min >= 500: continue
+            nbins[plot] += 1
             x[plot].append(bin.center)
             y[plot].append(fraction[plot][bin])
             ex[plot].append(bin.error)
             ey[plot].append(0)
 
-        g[plot] = ROOT.TGraphErrors(len(bins), x[plot], y[plot], ex[plot], ey[plot])
+        g[plot] = ROOT.TGraphErrors(nbins[plot], x[plot], y[plot], ex[plot], ey[plot])
         mg.Add(g[plot])
         g[plot].SetLineColor(plot.color)
         g[plot].SetMarkerColor(plot.color)
