@@ -24,8 +24,20 @@ TH1F* h1D_FRmu_EB = 0;
 TH1F* h1D_FRmu_EE = 0;
 TH1F* h1D_FRel_EB = 0;
 TH1F* h1D_FRel_EE = 0;
+bool didsetup = false;
+
+void setup() {
+  if (didsetup) return;
+  didsetup = true;
+  TFile* fFakeRates = TFile::Open("fakeRates_20151202.root");
+  h1D_FRmu_EB = (TH1F*)fFakeRates->Get("NoWZ_h1D_FRmu_EB");
+  h1D_FRmu_EE = (TH1F*)fFakeRates->Get("NoWZ_h1D_FRmu_EE");
+  h1D_FRel_EB = (TH1F*)fFakeRates->Get("NoWZ_h1D_FRel_EB");
+  h1D_FRel_EE = (TH1F*)fFakeRates->Get("NoWZ_h1D_FRel_EE");
+}
 
 Float_t fakeRate13TeV(Float_t LepPt, Float_t LepEta, Int_t LepID) {
+  setup();
   Float_t myLepPt = LepPt>=80. ? 79. : LepPt;
   Int_t   myLepID = abs(LepID);
   if(myLepID==11){
