@@ -1,4 +1,4 @@
-#include "../interface/bitops.h"
+#include "bitops.h"
 
 bool test_bit( int mask, unsigned int iBit ) { return (mask >> iBit) & 1; }
 void set_bit( int& mask, unsigned int iBit ) { mask |= (1<<iBit); }

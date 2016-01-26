@@ -5,8 +5,8 @@
 #include "TH1.h"
 #include "TTree.h"
 
-#include <ZZAnalysis/AnalysisStep/src/bitops.cc>
-#include <ZZAnalysis/AnalysisStep/interface/FinalStates.h>
+#include <bitops.cc>
+#include <FinalStates.h>
 
 using namespace std;
 
