@@ -116,7 +116,7 @@ def printCstr(filename):
 
     Cstring += "}\n"
 
-    c.SaveAs("test.png")
+    c.SaveAs("/afs/cern.ch/user/h/hroskes/TEST/test.png")
 
     return indent(Cstring)
 
