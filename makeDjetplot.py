@@ -1,5 +1,6 @@
 import array
 import collections
+import loadlib
 import os
 import ROOT
 import style
@@ -13,24 +14,34 @@ class Plot(object):
     units = ""
 
     def __init__(self, title, color, *CJLSTdirs, **kwargs):
+        print title
         for kwarg in kwargs:
             if kwarg == "maindir":
                 self.maindir = kwargs[kwarg]
-            if kwarg == "basename":
+            elif kwarg == "basename":
                 self.basename = kwargs[kwarg]
+            else:
+                raise TypeError("Unknown kwarg: %s=%s" % (kwarg, kwargs[kwarg]))
         self.filenames = [os.path.join(self.maindir, dir, self.basename) for dir in CJLSTdirs]
         self.title = title
         self.color = color
-        self.__h = None
+        self._h = None
 
     def __hash__(self):
         return hash((tuple(self.filenames), self.title, self.color))
     def __str__(self):
         return self.title
 
+    def addtolegend(self, tlegend, option = "l"):
+        tlegend.AddEntry(self.h(), self.title, option)
+
+class TreePlot(Plot):
+    def __init__(self, title, color, *CJLSTdirs, **kwargs):
+        Plot.__init__(self, title, color, *CJLSTdirs, **kwargs)
+
     def h(self, bins = None):
-        if self.__h is not None and bins is None:
-            return self.__h
+        if self._h is not None and bins is None:
+            return self._h
         if bins is None:
             bins = [Bin(-1, float("inf"))]
         print self.title
@@ -82,13 +93,83 @@ class Plot(object):
                 pass
 
         if len(h) == 1:
-            self.__h = h.values()[0]
+            self._h = h.values()[0]
         else:
-            self.__h = h
-        return self.__h
+            self._h = h
+        return self._h
 
-    def addtolegend(self, tlegend, option = "l"):
-        tlegend.AddEntry(self.h(), self.title, option)
+class ZXPlot(Plot):
+    def __init__(self, color):
+        Plot.__init__(self, "Z+X", color, ".", maindir = "fromSimon", basename = "fakeRates_20151202.root")
+
+    def h(self, bins = None):
+        if self._h is not None and bins is None:
+            return self._h
+        if bins is None:
+            bins = [Bin(-1, float("inf"))]
+        print self.title
+        t = ROOT.TChain("ZZTree/candTree")
+        for filename in self.filenames:
+            t.Add(filename)
+        pvbf = array.array('f', [0])
+        phjj = array.array('f', [0])
+        m4l = array.array('f', [0])
+        LepPt = ROOT.vector("Float_t")
+        LepEta = ROOT.vector("Float_t")
+        LepLepId = ROOT.vector("Short_t")
+
+        t.SetBranchAddress("pvbf_VAJHU_old", pvbf)
+        t.SetBranchAddress("phjj_VAJHU_old", phjj)
+        t.SetBranchAddress("ZZMass", m4l)
+        #t.SetBranchAddress("LepPt", ROOT.AddressOf(LepPt))
+        #t.SetBranchAddress("LepEta", ROOT.AddressOf(LepEta))
+        #t.SetBranchAddress("LepLepId", ROOT.AddressOf(LepLepId))
+        t.SetBranchAddress("LepPt", LepPt)
+        t.SetBranchAddress("LepEta", LepEta)
+        t.SetBranchAddress("LepLepId", LepLepId)
+
+        h = {}
+        sumofweights = {}
+        for bin in bins:
+            h[bin] = ROOT.TH1F("h"+self.title+str(bin), "D_{jet}", self.bins, self.min, self.max)
+            h[bin].SetLineColor(self.color)
+            h[bin].SetLineWidth(3)
+            sumofweights[bin] = 0
+
+        length = t.GetEntries()
+
+        for i in range(length):
+            t.GetEntry(i)
+
+            wt = ROOT.fakeRate13TeV(LepPt.at(2),LepEta.at(2),LepLepId.at(2)) * ROOT.fakeRate13TeV(LepPt.at(3),LepEta.at(3),LepLepId.at(3))
+
+            try:
+                Djet = (pvbf[0] / (pvbf[0] + phjj[0]))
+            except ZeroDivisionError:
+                pass
+
+            for bin in bins:
+                if bin.min < m4l[0] < bin.max:
+                    if pvbf[0] >= 0 and phjj[0] >= 0 and not (pvbf[0] == phjj[0] == 0):
+                        h[bin].Fill(Djet, wt)
+
+                    sumofweights[bin] += wt
+
+            if (i+1) % 10000 == 0 or i+1 == length:
+                print (i+1), "/", length
+
+        for bin in bins:
+            try:
+                h[bin].Scale(1.0/sumofweights[bin])
+            except ZeroDivisionError:
+                pass
+
+        if len(h) == 1:
+            self._h = h.values()[0]
+        else:
+            self._h = h
+        assert False
+        return self._h
 
 def makeDjetplots(*plots):
     c1 = ROOT.TCanvas()
@@ -189,31 +270,33 @@ def makeDjettable(massbins, *plots):
     print r"\end{center}"
 
 if __name__ == "__main__":
-    forplot = False
-    fortable = True
+    forplot = True
+    fortable = False
     if forplot:
         plots = (
-                 Plot("VBF",  1,              "VBF125"),
-                 Plot("H+jj", 2,              "ggH125"),
-                 Plot("ZH",   ROOT.kGreen-6,  "ZH125"),
-                 Plot("WH",   3,              "WplusH125"),
-                 Plot("ttH",  4,              "ttH125",     maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"),
-                 Plot("qqZZ", 6,              "ZZTo4l"),
-                 Plot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", 
+                 #TreePlot("VBF",  1,              "VBF125"),
+                 #TreePlot("H+jj", 2,              "ggH125"),
+                 #TreePlot("ZH",   ROOT.kGreen-6,  "ZH125"),
+                 #TreePlot("WH",   3,              "WplusH125"),
+                 #TreePlot("ttH",  4,              "ttH125",     maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"),
+                 #TreePlot("qqZZ", 6,              "ZZTo4l"),
+                 #TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", 
                                               #"ggZZ4e", "ggZZ4mu", "ggZZ4tau"
-                                            ),
+                 #                           ),
+                 ZXPlot(7),
                 )
         makeDjetplots(*plots)
     elif fortable:
         plots = (
-                 Plot("VBF",  1,              "VBF1000", "VBF115", "VBF124", "VBF125", "VBF126", "VBF130", "VBF135", "VBF140", "VBF155", "VBF160", "VBF165", "VBF170", "VBF175", "VBF200", "VBF210", "VBF230", "VBF250", "VBF270", "VBF300", "VBF350", "VBF400", "VBF450", "VBF500", "VBF550", "VBF600", "VBF700", "VBF750", "VBF800", "VBF900"),
-                 Plot("H+jj", 2,              "ggH1000", "ggH115", "ggH120", "ggH124", "ggH125", "ggH126", "ggH130", "ggH135", "ggH140", "ggH145", "ggH150", "ggH155", "ggH160", "ggH165", "ggH170", "ggH175", "ggH180", "ggH190", "ggH210", "ggH230", "ggH250", "ggH270", "ggH300", "ggH350", "ggH400", "ggH450", "ggH500", "ggH550", "ggH600", "ggH700", "ggH800", "ggH900"),
-                 Plot("ZH",   ROOT.kGreen-6,  "ZH120", "ZH124", "ZH125", "ZH145", "ZH150", "ZH165", "ZH180", "ZH200", "ZH300", "ZH400"),
-                 Plot("WH",   3,              "WplusH115", "WplusH120", "WplusH125", "WplusH130", "WplusH135", "WplusH140", "WplusH145", "WplusH150", "WplusH155", "WplusH160", "WplusH165", "WplusH175", "WplusH180", "WplusH190", "WplusH210", "WplusH230", "WplusH250", "WplusH270", "WplusH300", "WplusH350", "WplusH400", "WminusH115", "WminusH120", "WminusH124", "WminusH125", "WminusH126", "WminusH130", "WminusH135", "WminusH140", "WminusH145", "WminusH150", "WminusH155", "WminusH160", "WminusH165", "WminusH170", "WminusH175", "WminusH180", "WminusH190", "WminusH210", "WminusH230", "WminusH250", "WminusH270", "WminusH300", "WminusH350", "WminusH400"),
-                 Plot("ttH",  4,              "ttH125",     maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"),
-                 Plot("qqZZ", 6,              "ZZTo4l"),
-                 Plot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau",
-                                                #"ggZZ4e", "ggZZ4mu", "ggZZ4tau"
+                 TreePlot("VBF",  1,              "VBF1000", "VBF115", "VBF124", "VBF125", "VBF126", "VBF130", "VBF135", "VBF140", "VBF155", "VBF160", "VBF165", "VBF170", "VBF175", "VBF200", "VBF210", "VBF230", "VBF250", "VBF270", "VBF300", "VBF350", "VBF400", "VBF450", "VBF500", "VBF550", "VBF600", "VBF700", "VBF750", "VBF800", "VBF900"),
+                 TreePlot("H+jj", 2,              "ggH1000", "ggH115", "ggH120", "ggH124", "ggH125", "ggH126", "ggH130", "ggH135", "ggH140", "ggH145", "ggH150", "ggH155", "ggH160", "ggH165", "ggH170", "ggH175", "ggH180", "ggH190", "ggH210", "ggH230", "ggH250", "ggH270", "ggH300", "ggH350", "ggH400", "ggH450", "ggH500", "ggH550", "ggH600", "ggH700", "ggH800", "ggH900"),
+                 TreePlot("ZH",   ROOT.kGreen-6,  "ZH120", "ZH124", "ZH125", "ZH145", "ZH150", "ZH165", "ZH180", "ZH200", "ZH300", "ZH400"),
+                 TreePlot("WH",   3,              "WplusH115", "WplusH120", "WplusH125", "WplusH130", "WplusH135", "WplusH140", "WplusH145", "WplusH150", "WplusH155", "WplusH160", "WplusH165", "WplusH175", "WplusH180", "WplusH190", "WplusH210", "WplusH230", "WplusH250", "WplusH270", "WplusH300", "WplusH350", "WplusH400", "WminusH115", "WminusH120", "WminusH124", "WminusH125", "WminusH126", "WminusH130", "WminusH135", "WminusH140", "WminusH145", "WminusH150", "WminusH155", "WminusH160", "WminusH165", "WminusH170", "WminusH175", "WminusH180", "WminusH190", "WminusH210", "WminusH230", "WminusH250", "WminusH270", "WminusH300", "WminusH350", "WminusH400"),
+                 TreePlot("ttH",  4,              "ttH125",     maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"),
+                 TreePlot("qqZZ", 6,              "ZZTo4l"),
+                 TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau",
+                                                "ggZZ4e", "ggZZ4mu", "ggZZ4tau"
                                               ),
+                 ZXPlot(7),
                 )
         makeDjettable([100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 300, 400, 500, 600, 700, 800, 900, 1000], *plots)
