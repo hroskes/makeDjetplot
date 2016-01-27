@@ -1,13 +1,17 @@
 import array
 import collections
+import makeDjetplot
+import math
 import os
 import ROOT
 import style
-import makeDjetplot
+
+def gaus(x):
+    math.exp(-x**2)
 
 class AnalyticFunction(object):
     def __init__(self, name, evalstr, low, hi):
-        self.evalstr = evalstr
+        self.evalstr = evalstr.replace("TMath::Gaus", "(lambda x: math.exp(-x**2))")
         self.low = low
         self.hi = hi
         self.name = name
@@ -44,35 +48,39 @@ def getfunction(name, plots):
 
     limits = graphxlimits(plot)
 
-    if name == "ggZZ":
+    if name == "ggZZ" or name == "H+jj":
         plot = plots["H+jj"]
         x = plot.GetX()
         y = plot.GetY()
-        evalstr = "%f" % (sum(y[i] for i in range(plot.GetN()))/plot.GetN())
+        evalstr = "%e" % (sum(y[i] for i in range(plot.GetN()))/plot.GetN())
         low = None
         hi = None
-    if name == "H+jj" or name == "qqZZ":
-        evalstr = "%f" % (sum(y[i] for i in range(plot.GetN()))/plot.GetN())
+    if name == "qqZZ":  #from Ian's script
+        evalstr = "%e - %e*m4l*gaus((x-%e)/%e)" % (6.54811139624252893e-03, 5.86652284998493653e-06, 2.43263229325644204e+02, 2.27247741344343623e+01)
+        low = None
+        hi = None
+    if name == "Z+X":   #from Ian's script
+        evalstr = "1.00037988637144207e-02"
         low = None
         hi = None
     if name == "ttH":
         low, hi = limits
         f = ROOT.TF1("f_ttH", "[0] + [1]*x + [2]*x*x", low, hi)
         f.SetParameters(1, 1, 1)
-        plot.Fit(f)
-        evalstr = "%f + %f*m4l + %f*m4l*m4l" % tuple(f.GetParameter(a) for a in range(3))
+        plot.Fit(f, )
+        evalstr = "%e + %e*m4l + %e*m4l*m4l" % tuple(f.GetParameter(a) for a in range(3))
     if name == "VBF":
         low, hi = limits
         f = ROOT.TF1("f_VBF", "[0] + [1]*x + [2]*x*x", low, hi)
         f.SetParameters(1, 1, 1)
-        plot.Fit(f)
-        evalstr = "%f + %f*m4l + %f*m4l*m4l" % tuple(f.GetParameter(a) for a in range(3))
+        plot.Fit(f, )
+        evalstr = "%e + %e*m4l + %e*m4l*m4l" % tuple(f.GetParameter(a) for a in range(3))
     if name == "ZH" or name == "WH":   #set to linear below 200 GeV, constant above/below
         low, hi = 100, 200
         f = ROOT.TF1("f_%s"%name, "[0] + [1]*x", low, hi)
         f.SetParameters(1, -1)
-        plot.Fit(f)
-        evalstr = "%f + %f*m4l" % tuple(f.GetParameter(a) for a in range(2))
+        plot.Fit(f, )
+        evalstr = "%e + %e*m4l" % tuple(f.GetParameter(a) for a in range(2))
 
     return AnalyticFunction(name, evalstr, low, hi)
 

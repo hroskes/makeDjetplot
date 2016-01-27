@@ -32,12 +32,24 @@ def getfunction(name):
              "VBF": "PhantomSig_Djetcutshape",
              "Z+X": "ZX_Djetcutshape",
             }
+    fother = {
+              "ZH": ROOT.TF1("ZH_Djetcutshape", "x < [2] ? [0]+[1]*[2] : (x < [3] ? [0]+[1]*x : [0]+[1]*[3])", 0, 5000),
+              "WH": ROOT.TF1("WH_Djetcutshape", "x < [2] ? [0]+[1]*[2] : (x < [3] ? [0]+[1]*x : [0]+[1]*[3])", 0, 5000),
+              "ttH": ROOT.TF1("ttH_Djetcutshape", "x < [2] ? [0]+[1]*[2]+[4]*[2]*[2] : (x < [3] ? [0]+[1]*x+[4]*x*x : [0]+[1]*[3]+[4]*[3]*[3])", 0, 5000),
+              "VBF": ROOT.TF1("VBF_Djetcutshape", "x < [2] ? [0]+[1]*[2]+[4]*[2]*[2] : (x < [3] ? [0]+[1]*x+[4]*x*x : [0]+[1]*[3]+[4]*[3]*[3])", 0, 5000),
+             }
+
+    fother["ZH"].SetParameters(3.149234e-02, -9.108965e-05, 100, 200)
+    fother["WH"].SetParameters(3.363341e-02, -9.065518e-05, 100, 200)
+    fother["VBF"].SetParameters(3.850116e-01, 8.321654e-05, 100, 1000, -1.062607e-07)
+    fother["ttH"].SetParameters(1.067331e-01, -2.617962e-04, 100, 500, 2.580946e-07)
+
     try:
+        return fother[name]
+    except KeyError:
         f = rootfile.Get(fname[name])
         assert f
         return f
-    except KeyError:
-        return None
 
 def getplotsfromcanvas(canvas):
     legend = canvas.GetListOfPrimitives().At(2)
@@ -73,8 +85,10 @@ def draw(filename):
     functions["Z+X"].Draw("same")
 
 
-    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/TEST/test.png")
-    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/TEST/test.pdf")
+    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits.png")
+    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits.eps")
+    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits.root")
+    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits.pdf")
 
 if __name__ == '__main__':
     draw("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fraction.root")
