@@ -5,7 +5,7 @@ import ROOT
 import style
 import makeDjetplot
 
-rootfile = ROOT.TFile.Open("fromUlascan/HZZ4l-DjetCutShapes.root")
+#rootfile = ROOT.TFile.Open("fromUlascan/HZZ4l-DjetCutShapes.root")
 
 class AnalyticFunction(object):
     def __init__(self, name, evalstr, low, hi):
@@ -37,17 +37,25 @@ def getfunction(name):
               "WH": ROOT.TF1("WH_Djetcutshape", "x < [2] ? [0]+[1]*[2] : (x < [3] ? [0]+[1]*x : [0]+[1]*[3])", 0, 5000),
               "ttH": ROOT.TF1("ttH_Djetcutshape", "x < [2] ? [0]+[1]*[2]+[4]*[2]*[2] : (x < [3] ? [0]+[1]*x+[4]*x*x : [0]+[1]*[3]+[4]*[3]*[3])", 0, 5000),
               "VBF": ROOT.TF1("VBF_Djetcutshape", "x < [2] ? [0]+[1]*[2]+[4]*[2]*[2] : (x < [3] ? [0]+[1]*x+[4]*x*x : [0]+[1]*[3]+[4]*[3]*[3])", 0, 5000),
+              "ggZZ": ROOT.TF1("ggZZ_Djetcutshape", "[0]", 0, 5000),
+              "qqZZ": ROOT.TF1("qqZZ_Djetcutshape", "([0]-[1]*x*TMath::Gaus((x-[2])/[3]))", 0, 5000),
+              "Z+X": ROOT.TF1("ZX_Djetcutshape", "[0]", 0, 5000),
              }
+    fother["H+jj"] = fother["ggZZ"]
 
+    #the numbers are not really this precise, they are just copy and pasted
     fother["ZH"].SetParameters(3.149234e-02, -9.108965e-05, 100, 200)
     fother["WH"].SetParameters(3.363341e-02, -9.065518e-05, 100, 200)
-    fother["VBF"].SetParameters(3.850116e-01, 8.321654e-05, 100, 1000, -1.062607e-07)
     fother["ttH"].SetParameters(1.067331e-01, -2.617962e-04, 100, 500, 2.580946e-07)
+    fother["VBF"].SetParameters(3.850116e-01, 8.321654e-05, 100, 1000, -1.062607e-07)
+    fother["ggZZ"].SetParameters(2.85894522244111368e-02, 0)
+    fother["qqZZ"].SetParameters(6.54811139624252893e-03, 5.86652284998493653e-06, 2.43263229325644204e+02, 2.27247741344343623e+01)
+    fother["Z+X"].SetParameters(1.00037988637144207e-02, 0)
 
     try:
         return fother[name]
     except KeyError:
-        f = rootfile.Get(fname[name])
+        #f = rootfile.Get(fname[name])
         assert f
         return f
 
@@ -67,10 +75,19 @@ def draw(filename):
     c = f.GetListOfKeys().At(0).ReadObj()
     if not c or type(c) != ROOT.TCanvas:
         raise IOError("no canvas in file " + filename + "!")
+    multigraph = c.GetListOfPrimitives().At(1)
+    legend = c.GetListOfPrimitives().At(2)
 
     plots = getplotsfromcanvas(c)
     functions = {}
     for name in plots:
+        if name == "ggZZ":
+            multigraph.RecursiveRemove(plots[name])
+            for entry in legend.GetListOfPrimitives():
+                if entry.GetObject() == plots[name]:
+                    legend.GetListOfPrimitives().RecursiveRemove(entry)
+            legend.RecursiveRemove(plots[name])
+            continue
         plot = plots[name]
         f = getfunction(name)
         if f is not None:
@@ -79,10 +96,11 @@ def draw(filename):
             f.SetLineWidth(3)
             f.Draw("same")
 
-    functions["Z+X"] = getfunction("Z+X")
-    functions["Z+X"].SetLineColor(7)
-    functions["Z+X"].SetLineWidth(3)
-    functions["Z+X"].Draw("same")
+    legend.Draw()
+    #functions["Z+X"] = getfunction("Z+X")
+    #functions["Z+X"].SetLineColor(7)
+    #functions["Z+X"].SetLineWidth(3)
+    #functions["Z+X"].Draw("same")
 
 
     c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits.png")

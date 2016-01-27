@@ -14,7 +14,6 @@ class Plot(object):
     units = ""
 
     def __init__(self, title, color, *CJLSTdirs, **kwargs):
-        print title
         for kwarg in kwargs:
             if kwarg == "maindir":
                 self.maindir = kwargs[kwarg]
@@ -44,7 +43,6 @@ class TreePlot(Plot):
             return self._h
         if bins is None:
             bins = [Bin(-1, float("inf"))]
-        print self.title
         t = ROOT.TChain("ZZTree/candTree")
         for filename in self.filenames:
             t.Add(filename)
@@ -61,7 +59,9 @@ class TreePlot(Plot):
         for bin in bins:
             h[bin] = ROOT.TH1F("h"+self.title+str(bin), "D_{jet}", self.bins, self.min, self.max)
             h[bin].SetLineColor(self.color)
+            h[bin].SetMarkerColor(self.color)
             h[bin].SetLineWidth(3)
+            h[bin].Sumw2()
             sumofweights[bin] = 0
 
         length = t.GetEntries()
@@ -100,57 +100,40 @@ class TreePlot(Plot):
 
 class ZXPlot(Plot):
     def __init__(self, color):
-        Plot.__init__(self, "Z+X", color, ".", maindir = "fromSimon", basename = "fakeRates_20151202.root")
+        Plot.__init__(self, "Z+X", color, "DataTrees_151202", maindir = "fromSimon", basename = "ZZ4lAnalysis_allData.root")
 
     def h(self, bins = None):
         if self._h is not None and bins is None:
             return self._h
         if bins is None:
             bins = [Bin(-1, float("inf"))]
-        print self.title
-        t = ROOT.TChain("ZZTree/candTree")
+        t = ROOT.TChain("CRZLLTree/candTree")
         for filename in self.filenames:
             t.Add(filename)
-        pvbf = array.array('f', [0])
-        phjj = array.array('f', [0])
-        m4l = array.array('f', [0])
-        LepPt = ROOT.vector("Float_t")
-        LepEta = ROOT.vector("Float_t")
-        LepLepId = ROOT.vector("Short_t")
-
-        t.SetBranchAddress("pvbf_VAJHU_old", pvbf)
-        t.SetBranchAddress("phjj_VAJHU_old", phjj)
-        t.SetBranchAddress("ZZMass", m4l)
-        #t.SetBranchAddress("LepPt", ROOT.AddressOf(LepPt))
-        #t.SetBranchAddress("LepEta", ROOT.AddressOf(LepEta))
-        #t.SetBranchAddress("LepLepId", ROOT.AddressOf(LepLepId))
-        t.SetBranchAddress("LepPt", LepPt)
-        t.SetBranchAddress("LepEta", LepEta)
-        t.SetBranchAddress("LepLepId", LepLepId)
 
         h = {}
         sumofweights = {}
         for bin in bins:
             h[bin] = ROOT.TH1F("h"+self.title+str(bin), "D_{jet}", self.bins, self.min, self.max)
             h[bin].SetLineColor(self.color)
+            h[bin].SetMarkerColor(self.color)
             h[bin].SetLineWidth(3)
+            h[bin].Sumw2()
             sumofweights[bin] = 0
 
         length = t.GetEntries()
 
-        for i in range(length):
-            t.GetEntry(i)
-
-            wt = ROOT.fakeRate13TeV(LepPt.at(2),LepEta.at(2),LepLepId.at(2)) * ROOT.fakeRate13TeV(LepPt.at(3),LepEta.at(3),LepLepId.at(3))
+        for i, entry in enumerate(t):
+            wt = ROOT.fakeRate13TeV(entry.LepPt.at(2),entry.LepEta.at(2),entry.LepLepId.at(2)) * ROOT.fakeRate13TeV(entry.LepPt.at(3),entry.LepEta.at(3),entry.LepLepId.at(3))
 
             try:
-                Djet = (pvbf[0] / (pvbf[0] + phjj[0]))
+                Djet = (entry.pvbf_VAJHU_old / (entry.pvbf_VAJHU_old + entry.phjj_VAJHU_old))
             except ZeroDivisionError:
                 pass
 
             for bin in bins:
-                if bin.min < m4l[0] < bin.max:
-                    if pvbf[0] >= 0 and phjj[0] >= 0 and not (pvbf[0] == phjj[0] == 0):
+                if bin.min < entry.ZZMass < bin.max:
+                    if entry.pvbf_VAJHU_old >= 0 and entry.phjj_VAJHU_old >= 0 and not (entry.pvbf_VAJHU_old == entry.phjj_VAJHU_old == 0):
                         h[bin].Fill(Djet, wt)
 
                     sumofweights[bin] += wt
@@ -168,13 +151,13 @@ class ZXPlot(Plot):
             self._h = h.values()[0]
         else:
             self._h = h
-        assert False
         return self._h
 
 def makeDjetplots(*plots):
     c1 = ROOT.TCanvas()
     legend = ROOT.TLegend(0.6, 0.5, 0.9, 0.9)
     legend.SetLineStyle(0)
+    legend.SetLineColor(0)
     legend.SetFillStyle(0)
     hstack = ROOT.THStack("hstack", "D_{jet}")
     max, min, bins, units = None, None, None, None
@@ -184,7 +167,7 @@ def makeDjetplots(*plots):
         if max is None:
             max, min, bins, units = plot.max, plot.min, plot.bins, plot.units
         assert (max, min, bins, units) == (plot.max, plot.min, plot.bins, plot.units)
-    hstack.Draw("nostack")
+    hstack.Draw("nostackhist")
     hstack.GetXaxis().SetTitle("D_{jet}")
     hstack.GetYaxis().SetTitle("fraction of events / %s%s" % ((max-min)/bins, " "+units if units else ""))
     legend.Draw()
@@ -230,14 +213,14 @@ def makeDjettable(massbins, *plots):
 
         h = plot.h(bins)
         for bin in bins:
-            fraction[plot][bin] = h[bin].Integral(51, 100)
+            integralerror = array.array("d", [0])
+            fraction[plot][bin] = h[bin].IntegralAndError(51, 100, integralerror)
             if plot.title == "ttH" and bin.min >= 500: continue
             nbins[plot] += 1
             x[plot].append(bin.center)
             y[plot].append(fraction[plot][bin])
             ex[plot].append(bin.error)
-            ey[plot].append(0)
-
+            ey[plot].append(integralerror[0])
         g[plot] = ROOT.TGraphErrors(nbins[plot], x[plot], y[plot], ex[plot], ey[plot])
         mg.Add(g[plot])
         g[plot].SetLineColor(plot.color)
@@ -270,19 +253,19 @@ def makeDjettable(massbins, *plots):
     print r"\end{center}"
 
 if __name__ == "__main__":
-    forplot = True
-    fortable = False
+    forplot = False
+    fortable = True
     if forplot:
         plots = (
-                 #TreePlot("VBF",  1,              "VBF125"),
-                 #TreePlot("H+jj", 2,              "ggH125"),
-                 #TreePlot("ZH",   ROOT.kGreen-6,  "ZH125"),
-                 #TreePlot("WH",   3,              "WplusH125"),
-                 #TreePlot("ttH",  4,              "ttH125",     maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"),
-                 #TreePlot("qqZZ", 6,              "ZZTo4l"),
-                 #TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", 
+                 TreePlot("VBF",  1,              "VBF125"),
+                 TreePlot("H+jj", 2,              "ggH125"),
+                 TreePlot("ZH",   ROOT.kGreen-6,  "ZH125"),
+                 TreePlot("WH",   3,              "WplusH125"),
+                 TreePlot("ttH",  4,              "ttH125",     maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"),
+                 TreePlot("qqZZ", 6,              "ZZTo4l"),
+                 TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", 
                                               #"ggZZ4e", "ggZZ4mu", "ggZZ4tau"
-                 #                           ),
+                                            ),
                  ZXPlot(7),
                 )
         makeDjetplots(*plots)
@@ -295,7 +278,7 @@ if __name__ == "__main__":
                  TreePlot("ttH",  4,              "ttH125",     maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"),
                  TreePlot("qqZZ", 6,              "ZZTo4l"),
                  TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau",
-                                                "ggZZ4e", "ggZZ4mu", "ggZZ4tau"
+                                                #"ggZZ4e", "ggZZ4mu", "ggZZ4tau"
                                               ),
                  ZXPlot(7),
                 )
