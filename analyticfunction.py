@@ -11,7 +11,7 @@ def gaus(x):
 
 class AnalyticFunction(object):
     def __init__(self, name, evalstr, low, hi):
-        self.evalstr = evalstr.replace("TMath::Gaus", "(lambda x: math.exp(-x**2))")
+        self.evalstr = evalstr
         self.low = low
         self.hi = hi
         self.name = name
@@ -25,6 +25,7 @@ class AnalyticFunction(object):
         self.Cstr += "return %(evalstr)s;\n"
         self.Cstr += "}\n"
         self.Cstr %= self.__dict__
+        self.Cstr = self.Cstr.replace("gaus", "TMath::Gaus")
 
 def graphxlimits(graph):
     x = graph.GetX()
@@ -63,7 +64,7 @@ def getfunction(name, plots):
         low = None
         hi = None
     if name == "qqZZ":  #from Ian's script
-        evalstr = "%e - %e*m4l*gaus((x-%e)/%e)" % (6.54811139624252893e-03, 5.86652284998493653e-06, 2.43263229325644204e+02, 2.27247741344343623e+01)
+        evalstr = "%e - %e*m4l*gaus((m4l-%e)/%e)" % (6.54811139624252893e-03, 5.86652284998493653e-06, 2.43263229325644204e+02, 2.27247741344343623e+01)
         low = None
         hi = None
     if name == "ttH":
@@ -130,7 +131,8 @@ def printCstr(filename):
 
     Cstring = ""
 
-    Cstring += "#include <assert.h>\n\n"
+    Cstring += "#include <assert.h>\n"
+    Cstring += '#include "TMath.h"\n\n'
     Cstring += "enum Channel {channel_" + ", channel_".join(name.replace("+", "") for name in plots) + "};\n\n"
 
     Cstring += "double Djetefficiency(double m4l, Channel channel)\n"
@@ -139,9 +141,8 @@ def printCstr(filename):
         function = getfunction(name, plots)
         Cstring += function.Cstr
 
-    Cstring = Cstring.replace("if", "else if").replace("else if", "if", 1)
-    Cstring += "else\n"
-    Cstring += "    assert(false)\n"
+    Cstring += "\n"
+    Cstring += "assert(false);\n"
     Cstring += "}\n"
 
     c.SaveAs("/afs/cern.ch/user/h/hroskes/TEST/test.png")
