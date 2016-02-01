@@ -46,13 +46,6 @@ class TreePlot(Plot):
         t = ROOT.TChain("ZZTree/candTree")
         for filename in self.filenames:
             t.Add(filename)
-        pvbf = array.array('f', [0])
-        phjj = array.array('f', [0])
-        m4l = array.array('f', [0])
-        MC_weight = array.array('f', [1])
-        t.SetBranchAddress("pvbf_VAJHU_old", pvbf)
-        t.SetBranchAddress("phjj_VAJHU_old", phjj)
-        t.SetBranchAddress("ZZMass", m4l)
 
         h = {}
         sumofweights = {}
@@ -66,19 +59,19 @@ class TreePlot(Plot):
 
         length = t.GetEntries()
 
-        for i in range(length):
+        for i, entry in enumerate(t):
             t.GetEntry(i)
 
-            wt = MC_weight[0]
+            wt = entry.genHEPMCweight
 
             try:
-                Djet = (pvbf[0] / (pvbf[0] + phjj[0]))
+                Djet = (entry.pvbf_VAJHU_old / (entry.pvbf_VAJHU_old + entry.phjj_VAJHU_old))
             except ZeroDivisionError:
                 pass
 
             for bin in bins:
-                if bin.min < m4l[0] < bin.max:
-                    if pvbf[0] >= 0 and phjj[0] >= 0 and not (pvbf[0] == phjj[0] == 0):
+                if bin.min < entry.ZZMass < bin.max:
+                    if entry.pvbf_VAJHU_old >= 0 and entry.phjj_VAJHU_old >= 0 and not (entry.pvbf_VAJHU_old == entry.phjj_VAJHU_old == 0):
                         h[bin].Fill(Djet, wt)
 
                     sumofweights[bin] += wt
@@ -253,8 +246,8 @@ def makeDjettable(massbins, *plots):
     print r"\end{center}"
 
 if __name__ == "__main__":
-    forplot = False
-    fortable = True
+    forplot = True
+    fortable = False
     if forplot:
         plots = (
                  TreePlot("VBF",  1,              "VBF125"),
