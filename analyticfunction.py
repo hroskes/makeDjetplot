@@ -50,8 +50,8 @@ def weightedaverage(x, ex):
 def getfunction(name, plots):
 
     plot = plots[name]
-    if name == "ggZZ" or name == "H+jj":
-        plot = plots["H+jj"]
+    if name == "ggZZ" or name == "ggH":
+        plot = plots["ggH"]
     x = [xi for i, xi in zip(range(plot.GetN()), plot.GetX())]
     y = [yi for i, yi in zip(range(plot.GetN()), plot.GetY())]
     ex = [exi for i, exi in zip(range(plot.GetN()), plot.GetX())]
@@ -59,7 +59,8 @@ def getfunction(name, plots):
 
     limits = graphxlimits(plot)
 
-    if name == "ggZZ" or name == "H+jj" or name == "Z+X":
+    if name == "ggZZ" or name == "ggH" or name == "Z+X":
+        print name, y, ey
         evalstr = "%e" % weightedaverage(y, ey)
         low = None
         hi = None
@@ -75,20 +76,20 @@ def getfunction(name, plots):
         evalstr = "%e + %e*m4l + %e*m4l*m4l" % tuple(f.GetParameter(a) for a in range(3))
     if name == "VBF":
         low, hi = limits
-        f = ROOT.TF1("f_VBF", "[0] + [1]*x + [2]*x*x", low, hi)
-        f.SetParameters(1, 1, 1)
+        f = ROOT.TF1("f_VBF", "[0] + [1]*x + [2]*x*x + [3]*x*x*x", low, hi)
+        f.SetParameters(1, 1, 1, 1)
         plot.Fit(f, "W")
-        evalstr = "%e + %e*m4l + %e*m4l*m4l" % tuple(f.GetParameter(a) for a in range(3))
+        evalstr = "%e + %e*m4l + %e*m4l*m4l + %e*m4l*m4l*m4l" % tuple(f.GetParameter(a) for a in range(4))
     if name == "ZH" or name == "WH":   #set to linear below 200 GeV, constant above/below
         low, hi = 100, 200
         f = ROOT.TF1("f_%s"%name, "[0] + [1]*x", low, hi)
         f.SetParameters(1, -1)
         plot.Fit(f, "W")
 
-        if name == "ZH":
-            f.SetParameters(3.149234e-02, -9.108965e-05)
-        elif name == "WH":
-            f.SetParameters(3.363341e-02, -9.065518e-05)
+        #if name == "ZH":
+        #    f.SetParameters(3.149234e-02, -9.108965e-05)
+        #elif name == "WH":
+        #    f.SetParameters(3.363341e-02, -9.065518e-05)
 
         evalstr = "%e + %e*m4l" % tuple(f.GetParameter(a) for a in range(2))
 

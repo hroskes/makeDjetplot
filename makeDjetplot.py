@@ -6,7 +6,7 @@ import ROOT
 import style
 
 class Plot(object):
-    maindir = "root://lxcms03//data3/Higgs/160225/"
+    maindir = "/tmp/hroskes/CJLST"
     basename = "ZZ4lAnalysis.root"
     min = 0.
     max = 1.
@@ -45,9 +45,7 @@ class TreePlot(Plot):
             bins = [Bin(-1, float("inf"))]
         t = ROOT.TChain("ZZTree/candTree")
         for filename in self.filenames:
-            print filename
             t.Add(filename)
-            print filename
         print t.GetEntries()
 
         h = {}
@@ -251,11 +249,12 @@ def makeDjettable(massbins, *plots):
     print r"\end{center}"
 
 if __name__ == "__main__":
-    forplot = True
-    fortable = False
+    forplot = False
+    fortable = True
     if forplot:
+        assert not fortable
         plots = (
-                 TreePlot("VBF",  1,              "VBF125"),
+                 TreePlot("VBF",  1,              "VBFH125"),
                  TreePlot("ggH",  2,              "ggH125"),
                  TreePlot("ZH",   ROOT.kGreen-6,  "ZH125"),
                  TreePlot("WH",   3,              "WplusH125"),

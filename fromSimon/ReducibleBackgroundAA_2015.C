@@ -29,7 +29,7 @@ bool didsetup = false;
 void setup() {
   if (didsetup) return;
   didsetup = true;
-  TFile* fFakeRates = TFile::Open("fromSimon/fakeRates_20160225.root");
+  TFile* fFakeRates = TFile::Open("fromSimon/fakeRates_20151202.root");
   h1D_FRmu_EB = (TH1F*)fFakeRates->Get("NoWZ_h1D_FRmu_EB");
   h1D_FRmu_EE = (TH1F*)fFakeRates->Get("NoWZ_h1D_FRmu_EE");
   h1D_FRel_EB = (TH1F*)fFakeRates->Get("NoWZ_h1D_FRel_EB");
@@ -59,7 +59,7 @@ Float_t fakeRate13TeV(Float_t LepPt, Float_t LepEta, Int_t LepID) {
 void ReducibleBackgroundAA_2015()
 {
 
-  TFile* fFakeRates = TFile::Open("fromSimon/fakeRates_20160225.root");
+  TFile* fFakeRates = TFile::Open("fromSimon/fakeRates_20151202.root");
   /*
   h1D_FRmu_EB = (TH1F*)fFakeRates->Get("h1D_FRmu_EB");
   h1D_FRmu_EE = (TH1F*)fFakeRates->Get("h1D_FRmu_EE");
