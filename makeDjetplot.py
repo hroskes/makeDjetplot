@@ -6,7 +6,7 @@ import ROOT
 import style
 
 class Plot(object):
-    maindir = "root://lxcms03://data3/Higgs/160121/"
+    maindir = "root://lxcms03//data3/Higgs/160225/"
     basename = "ZZ4lAnalysis.root"
     min = 0.
     max = 1.
@@ -45,7 +45,10 @@ class TreePlot(Plot):
             bins = [Bin(-1, float("inf"))]
         t = ROOT.TChain("ZZTree/candTree")
         for filename in self.filenames:
+            print filename
             t.Add(filename)
+            print filename
+        print t.GetEntries()
 
         h = {}
         sumofweights = {}
@@ -93,7 +96,7 @@ class TreePlot(Plot):
 
 class ZXPlot(Plot):
     def __init__(self, color):
-        Plot.__init__(self, "Z+X", color, "DataTrees_151202", maindir = "fromSimon", basename = "ZZ4lAnalysis_allData.root")
+        Plot.__init__(self, "Z+X", color, "DataTrees_160225", maindir = "fromSimon", basename = "ZZ4lAnalysis_allData.root")
 
     def h(self, bins = None):
         if self._h is not None and bins is None:
@@ -147,6 +150,7 @@ class ZXPlot(Plot):
         return self._h
 
 def makeDjetplots(*plots):
+    print "ABC"
     c1 = ROOT.TCanvas()
     legend = ROOT.TLegend(0.6, 0.5, 0.9, 0.9)
     legend.SetLineStyle(0)
@@ -155,6 +159,7 @@ def makeDjetplots(*plots):
     hstack = ROOT.THStack("hstack", "D_{jet}")
     max, min, bins, units = None, None, None, None
     for plot in plots:
+        print plot
         hstack.Add(plot.h())
         plot.addtolegend(legend)
         if max is None:
@@ -251,28 +256,24 @@ if __name__ == "__main__":
     if forplot:
         plots = (
                  TreePlot("VBF",  1,              "VBF125"),
-                 TreePlot("H+jj", 2,              "ggH125"),
+                 TreePlot("ggH",  2,              "ggH125"),
                  TreePlot("ZH",   ROOT.kGreen-6,  "ZH125"),
                  TreePlot("WH",   3,              "WplusH125"),
-                 TreePlot("ttH",  4,              "ttH125",     maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"),
+                 TreePlot("ttH",  4,              "ttH125"),
                  TreePlot("qqZZ", 6,              "ZZTo4l"),
-                 TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", 
-                                              #"ggZZ4e", "ggZZ4mu", "ggZZ4tau"
-                                            ),
+                 TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", "ggZZ4e", "ggZZ4mu", "ggZZ4tau"),
                  ZXPlot(7),
                 )
         makeDjetplots(*plots)
     elif fortable:
         plots = (
-                 TreePlot("VBF",  1,              "VBF1000", "VBF115", "VBF124", "VBF125", "VBF126", "VBF130", "VBF135", "VBF140", "VBF155", "VBF160", "VBF165", "VBF170", "VBF175", "VBF200", "VBF210", "VBF230", "VBF250", "VBF270", "VBF300", "VBF350", "VBF400", "VBF450", "VBF500", "VBF550", "VBF600", "VBF700", "VBF750", "VBF800", "VBF900"),
-                 TreePlot("H+jj", 2,              "ggH1000", "ggH115", "ggH120", "ggH124", "ggH125", "ggH126", "ggH130", "ggH135", "ggH140", "ggH145", "ggH150", "ggH155", "ggH160", "ggH165", "ggH170", "ggH175", "ggH180", "ggH190", "ggH210", "ggH230", "ggH250", "ggH270", "ggH300", "ggH350", "ggH400", "ggH450", "ggH500", "ggH550", "ggH600", "ggH700", "ggH800", "ggH900"),
-                 TreePlot("ZH",   ROOT.kGreen-6,  "ZH120", "ZH124", "ZH125", "ZH145", "ZH150", "ZH165", "ZH180", "ZH200", "ZH300", "ZH400"),
-                 TreePlot("WH",   3,              "WplusH115", "WplusH120", "WplusH125", "WplusH130", "WplusH135", "WplusH140", "WplusH145", "WplusH150", "WplusH155", "WplusH160", "WplusH165", "WplusH175", "WplusH180", "WplusH190", "WplusH210", "WplusH230", "WplusH250", "WplusH270", "WplusH300", "WplusH350", "WplusH400", "WminusH115", "WminusH120", "WminusH124", "WminusH125", "WminusH126", "WminusH130", "WminusH135", "WminusH140", "WminusH145", "WminusH150", "WminusH155", "WminusH160", "WminusH165", "WminusH170", "WminusH175", "WminusH180", "WminusH190", "WminusH210", "WminusH230", "WminusH250", "WminusH270", "WminusH300", "WminusH350", "WminusH400"),
-                 TreePlot("ttH",  4,              "ttH125",     maindir = "root://lxcms03://data3/Higgs/160111_ggZZincomplete/"),
+                 TreePlot("VBF",  1,              "VBFH1000", "VBFH115", "VBFH120", "VBFH124", "VBFH550", "VBFH125", "VBFH126", "VBFH130", "VBFH135", "VBFH140", "VBFH145", "VBFH150", "VBFH155", "VBFH160", "VBFH165", "VBFH170", "VBFH175", "VBFH180", "VBFH190", "VBFH200", "VBFH210", "VBFH230", "VBFH250", "VBFH270", "VBFH300", "VBFH350", "VBFH400", "VBFH450", "VBFH500", "VBFH600", "VBFH700", "VBFH750", "VBFH800", "VBFH900"),
+                 TreePlot("ggH",  2,              "ggH350", "ggH200", "ggH190", "ggH230", "ggH160", "ggH210", "ggH1000", "ggH175", "ggH270", "ggH180", "ggH250", "ggH300", "ggH400", "ggH550", "ggH115", "ggH120", "ggH124", "ggH125", "ggH126", "ggH130", "ggH135", "ggH140", "ggH145", "ggH150", "ggH155", "ggH165", "ggH170", "ggH450"),
+                 TreePlot("ZH",   ROOT.kGreen-6,  "ZH125", "ZH140", "ZH400", "ZH120", "ZH124", "ZH126", "ZH130", "ZH135", "ZH145", "ZH150", "ZH155", "ZH165", "ZH170", "ZH175", "ZH180", "ZH190", "ZH200", "ZH210", "ZH250", "ZH270", "ZH300", "ZH350"),
+                 TreePlot("WH",   3,              "WplusH400", "WplusH175", "WminusH115", "WminusH120", "WminusH124", "WminusH125", "WminusH126", "WminusH130", "WminusH135", "WminusH140", "WminusH145", "WminusH150", "WminusH155", "WminusH160", "WminusH165", "WminusH170", "WminusH175", "WminusH180", "WminusH190", "WminusH200", "WminusH210", "WminusH230", "WminusH250", "WminusH270", "WminusH300", "WminusH350", "WminusH400", "WplusH115", "WplusH120", "WplusH124", "WplusH125", "WplusH130", "WplusH135", "WplusH140", "WplusH145", "WplusH150", "WplusH155", "WplusH160", "WplusH165", "WplusH170", "WplusH180", "WplusH190", "WplusH200", "WplusH210", "WplusH230", "WplusH250", "WplusH270", "WplusH300", "WplusH350"),
+                 TreePlot("ttH",  4,              "ttH130", "ttH115", "ttH124", "ttH125"),
                  TreePlot("qqZZ", 6,              "ZZTo4l"),
-                 TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau",
-                                                #"ggZZ4e", "ggZZ4mu", "ggZZ4tau"
-                                              ),
+                 TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", "ggZZ4e", "ggZZ4mu", "ggZZ4tau"),
                  ZXPlot(7),
                 )
         makeDjettable([100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 300, 400, 500, 600, 700, 800, 900, 1000], *plots)
