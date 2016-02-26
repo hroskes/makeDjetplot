@@ -154,6 +154,7 @@ def makeDjetplots(*plots):
     legend.SetLineStyle(0)
     legend.SetLineColor(0)
     legend.SetFillStyle(0)
+    legend.SetBorderSize(0)
     hstack = ROOT.THStack("hstack", "D_{jet}")
     max, min, bins, units = None, None, None, None
     for plot in plots:
@@ -198,6 +199,7 @@ def makeDjettable(massbins, *plots):
     legend.SetLineStyle(0)
     legend.SetLineColor(0)
     legend.SetFillStyle(0)
+    legend.SetBorderSize(0)
 
     for plot in plots:
         x[plot] = array.array("d")

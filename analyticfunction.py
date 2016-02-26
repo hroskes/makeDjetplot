@@ -54,13 +54,12 @@ def getfunction(name, plots):
         plot = plots["ggH"]
     x = [xi for i, xi in zip(range(plot.GetN()), plot.GetX())]
     y = [yi for i, yi in zip(range(plot.GetN()), plot.GetY())]
-    ex = [exi for i, exi in zip(range(plot.GetN()), plot.GetX())]
-    ey = [eyi for i, eyi in zip(range(plot.GetN()), plot.GetY())]
+    ex = [exi for i, exi in zip(range(plot.GetN()), plot.GetEX())]
+    ey = [eyi for i, eyi in zip(range(plot.GetN()), plot.GetEY())]
 
     limits = graphxlimits(plot)
 
     if name == "ggZZ" or name == "ggH" or name == "Z+X":
-        print name, y, ey
         evalstr = "%e" % weightedaverage(y, ey)
         low = None
         hi = None
@@ -81,27 +80,27 @@ def getfunction(name, plots):
         plot.Fit(f, "W")
         evalstr = "%e + %e*m4l + %e*m4l*m4l + %e*m4l*m4l*m4l" % tuple(f.GetParameter(a) for a in range(4))
     if name == "ZH" or name == "WH":   #set to linear below 200 GeV, constant above/below
-        low, hi = 100, 200
-        f = ROOT.TF1("f_%s"%name, "[0] + [1]*x", low, hi)
-        f.SetParameters(1, -1)
+        low, hi = 110, 200
+        f = ROOT.TF1("f_%s"%name, "[0] + [1]*x + [2]*x*x", low, hi)
+        f.SetParameters(1, 1, -1)
+        if name == "ZH":
+            f.FixParameter(1, -0.000111909)
+            f.FixParameter(0, 0.035839409)
+            f.FixParameter(2, 0)
         plot.Fit(f, "W")
 
-        #if name == "ZH":
-        #    f.SetParameters(3.149234e-02, -9.108965e-05)
-        #elif name == "WH":
-        #    f.SetParameters(3.363341e-02, -9.065518e-05)
-
-        evalstr = "%e + %e*m4l" % tuple(f.GetParameter(a) for a in range(2))
+        evalstr = "%e + %e*m4l + %e*m4l*m4l" % tuple(f.GetParameter(a) for a in range(3))
 
     return AnalyticFunction(name, evalstr, low, hi)
 
 
 def getplotsfromcanvas(canvas):
     legend = canvas.GetListOfPrimitives().At(2)
-    plots = {}
+    plots = collections.OrderedDict((a, None) for a in ("ggH", "VBF", "WH", "ZH", "ttH", "qqZZ", "ggZZ", "Z+X"))
     for entry in legend.GetListOfPrimitives():
         graph = entry.GetObject()
         name = entry.GetLabel()
+        assert name in plots
         plots[name] = graph
     return plots
 
