@@ -6,7 +6,7 @@ import ROOT
 import style
 
 class Plot(object):
-    maindir = "/tmp/hroskes/CJLST"
+    maindir = "root://lxcms03//data3/Higgs/160225/"
     basename = "ZZ4lAnalysis.root"
     min = 0.
     max = 1.
@@ -251,10 +251,9 @@ def makeDjettable(massbins, *plots):
     print r"\end{center}"
 
 if __name__ == "__main__":
-    forplot = False
+    forplot = True
     fortable = True
     if forplot:
-        assert not fortable
         plots = (
                  TreePlot("VBF",  1,              "VBFH125"),
                  TreePlot("ggH",  2,              "ggH125"),
@@ -266,7 +265,7 @@ if __name__ == "__main__":
                  ZXPlot(7),
                 )
         makeDjetplots(*plots)
-    elif fortable:
+    if fortable:
         plots = (
                  TreePlot("VBF",  1,              "VBFH1000", "VBFH115", "VBFH120", "VBFH124", "VBFH550", "VBFH125", "VBFH126", "VBFH130", "VBFH135", "VBFH140", "VBFH145", "VBFH150", "VBFH155", "VBFH160", "VBFH165", "VBFH170", "VBFH175", "VBFH180", "VBFH190", "VBFH200", "VBFH210", "VBFH230", "VBFH250", "VBFH270", "VBFH300", "VBFH350", "VBFH400", "VBFH450", "VBFH500", "VBFH600", "VBFH700", "VBFH750", "VBFH800", "VBFH900"),
                  TreePlot("ggH",  2,              "ggH350", "ggH200", "ggH190", "ggH230", "ggH160", "ggH210", "ggH1000", "ggH175", "ggH270", "ggH180", "ggH250", "ggH300", "ggH400", "ggH550", "ggH115", "ggH120", "ggH124", "ggH125", "ggH126", "ggH130", "ggH135", "ggH140", "ggH145", "ggH150", "ggH155", "ggH165", "ggH170", "ggH450"),
