@@ -63,7 +63,8 @@ class TreePlot(Plot):
         for i, entry in enumerate(t):
             t.GetEntry(i)
 
-            wt = entry.genHEPMCweight
+            wt = entry.overallEventWeight
+            #wt = entry.genHEPMCweight
 
             try:
                 Djet = (entry.pvbf_VAJHU_old / (entry.pvbf_VAJHU_old + entry.phjj_VAJHU_old))
@@ -275,8 +276,8 @@ def printdebug(massbins, *plots):
         print "ABC"
         for bin in bins:
             integralerror = array.array("d", [0])
-            passcut[plot][bin] = h[bin].IntegralAndError(0, 100, integralerror)
-            failcut[plot][bin] = h[bin].IntegralAndError(51, 100, integralerror)
+            passcut[plot][bin] = h[bin].IntegralAndError(51, 100, integralerror)
+            failcut[plot][bin] = h[bin].IntegralAndError(1, 50, integralerror)
             notdijet[plot][bin] = h[bin].GetBinContent(0)
 
     header_format = "  ".join(["{:>15}"] + ["{:>14}"] * (3*len(plots)))
@@ -288,9 +289,9 @@ def printdebug(massbins, *plots):
 
 
 if __name__ == "__main__":
-    forplot = False
-    fortable = False
-    fordebug = True
+    forplot = True
+    fortable = True
+    fordebug = False
     if forplot:
         plots = (
                  TreePlot("VBF",  1,              "VBFH125"),
