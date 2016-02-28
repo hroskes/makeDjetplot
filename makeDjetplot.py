@@ -38,7 +38,7 @@ class TreePlot(Plot):
     def __init__(self, title, color, *CJLSTdirs, **kwargs):
         Plot.__init__(self, title, color, *CJLSTdirs, **kwargs)
 
-    def h(self, bins = None):
+    def h(self, bins = None, normalize = True):
         if self._h is not None and bins is None:
             return self._h
         if bins is None:
@@ -71,20 +71,23 @@ class TreePlot(Plot):
                 pass
 
             for bin in bins:
-                if bin.min < entry.ZZMass < bin.max:
+                if bin.min <= entry.ZZMass < bin.max:
                     if entry.pvbf_VAJHU_old >= 0 and entry.phjj_VAJHU_old >= 0 and not (entry.pvbf_VAJHU_old == entry.phjj_VAJHU_old == 0):
                         h[bin].Fill(Djet, wt)
+                    else:
+                        h[bin].Fill(-1, wt)
 
                     sumofweights[bin] += wt
 
             if (i+1) % 10000 == 0 or i+1 == length:
                 print (i+1), "/", length
 
-        for bin in bins:
-            try:
-                h[bin].Scale(1.0/sumofweights[bin])
-            except ZeroDivisionError:
-                pass
+        if normalize:
+            for bin in bins:
+                try:
+                    h[bin].Scale(1.0/sumofweights[bin])
+                except ZeroDivisionError:
+                    pass
 
         if len(h) == 1:
             self._h = h.values()[0]
@@ -96,7 +99,7 @@ class ZXPlot(Plot):
     def __init__(self, color):
         Plot.__init__(self, "Z+X", color, "DataTrees_160225", maindir = "fromSimon", basename = "ZZ4lAnalysis_allData.root")
 
-    def h(self, bins = None):
+    def h(self, bins = None, normalize = True):
         if self._h is not None and bins is None:
             return self._h
         if bins is None:
@@ -126,20 +129,23 @@ class ZXPlot(Plot):
                 pass
 
             for bin in bins:
-                if bin.min < entry.ZZMass < bin.max:
+                if bin.min <= entry.ZZMass < bin.max:
                     if entry.pvbf_VAJHU_old >= 0 and entry.phjj_VAJHU_old >= 0 and not (entry.pvbf_VAJHU_old == entry.phjj_VAJHU_old == 0):
                         h[bin].Fill(Djet, wt)
+                    else:
+                        h[bin].Fill(-1, wt)
 
                     sumofweights[bin] += wt
 
             if (i+1) % 10000 == 0 or i+1 == length:
                 print (i+1), "/", length
 
-        for bin in bins:
-            try:
-                h[bin].Scale(1.0/sumofweights[bin])
-            except ZeroDivisionError:
-                pass
+        if normalize:
+            for bin in bins:
+                try:
+                    h[bin].Scale(1.0/sumofweights[bin])
+                except ZeroDivisionError:
+                    pass
 
         if len(h) == 1:
             self._h = h.values()[0]
@@ -250,9 +256,41 @@ def makeDjettable(massbins, *plots):
     print r"\end{tabular}"
     print r"\end{center}"
 
+def printdebug(massbins, *plots):
+    print massbins
+    bins = [Bin(massbins[i], massbins[i+1]) for i in range(len(massbins)-1)]
+    for a in bins: print a
+
+    fraction = collections.OrderedDict()
+    passcut = collections.OrderedDict()
+    failcut = collections.OrderedDict()
+    notdijet = collections.OrderedDict()
+
+    for plot in plots:
+        passcut[plot] = collections.OrderedDict()
+        failcut[plot] = collections.OrderedDict()
+        notdijet[plot] = collections.OrderedDict()
+
+        h = plot.h(bins, normalize = False)
+        print "ABC"
+        for bin in bins:
+            integralerror = array.array("d", [0])
+            passcut[plot][bin] = h[bin].IntegralAndError(0, 100, integralerror)
+            failcut[plot][bin] = h[bin].IntegralAndError(51, 100, integralerror)
+            notdijet[plot][bin] = h[bin].GetBinContent(0)
+
+    header_format = "  ".join(["{:>15}"] + ["{:>14}"] * (3*len(plots)))
+    row_format = "  ".join(["{:>15}"] + [r"{:14.2f}"] * (3*len(plots)))
+    print header_format.format("", *sum((["", plot, ""] for plot in plots), []))
+    print header_format.format("", *(["pass", "fail", "<2 jets"]*len(plots)))
+    for bin in bins:
+        print row_format.format(bin, *sum(([passcut[plot][bin], failcut[plot][bin], notdijet[plot][bin]] for plot in plots), []))
+
+
 if __name__ == "__main__":
-    forplot = True
-    fortable = True
+    forplot = False
+    fortable = False
+    fordebug = True
     if forplot:
         plots = (
                  TreePlot("VBF",  1,              "VBFH125"),
@@ -277,3 +315,9 @@ if __name__ == "__main__":
                  ZXPlot(7),
                 )
         makeDjettable([100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 300, 400, 500, 600, 700, 800, 900, 1000], *plots)
+    if fordebug:
+        plots = (
+                 TreePlot("new", 1,              "VBFH125"),
+                 TreePlot("old", 2,              "VBF125", maindir="root://lxcms03://data3/Higgs/160121/"),
+                )
+        printdebug([100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 300, 400, 500, 600, 700, 800, 900, 1000], *plots)
