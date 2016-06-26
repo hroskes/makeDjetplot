@@ -26,12 +26,12 @@ def zoom(filename, axis, xmin, xmax):
     c.SaveAs(newfilename+".pdf")
 
 def dozoom():
-    zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits.root", 'x', 100, 200)
-    #zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fraction.root", 'x', 100, 200)
-    zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits.root", 'y', 0, .1)
-    #zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fraction.root", 'y', 0, .1)
-    zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits_100-200.root", 'y', 0, .1)
-    #zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fraction_100-200.root", 'y', 0, .1)
+    zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fits.root", 'x', 100, 200)
+    #zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fraction.root", 'x', 100, 200)
+    zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fits.root", 'y', 0, .1)
+    #zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fraction.root", 'y', 0, .1)
+    zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fits_100-200.root", 'y', 0, .1)
+    #zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fraction_100-200.root", 'y', 0, .1)
 
 if __name__ == "__main__":
     dozoom()

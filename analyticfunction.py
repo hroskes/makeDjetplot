@@ -150,7 +150,7 @@ def printCstr(filename):
     return indent(Cstring)
 
 if __name__ == "__main__":
-    Cstring = printCstr("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fraction.root")
+    Cstring = printCstr("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fraction.root")
     print Cstring
     with open("Djetefficiency.C", "w") as f:
         f.write(Cstring)

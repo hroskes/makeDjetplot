@@ -175,10 +175,10 @@ def makeDjetplots(*plots):
     hstack.GetXaxis().SetTitle("D_{jet}")
     hstack.GetYaxis().SetTitle("fraction of events / %s%s" % ((max-min)/bins, " "+units if units else ""))
     legend.Draw()
-    c1.SaveAs("~/www/VBF/Djet/Djet.png")
-    c1.SaveAs("~/www/VBF/Djet/Djet.eps")
-    c1.SaveAs("~/www/VBF/Djet/Djet.root")
-    c1.SaveAs("~/www/VBF/Djet/Djet.pdf")
+    c1.SaveAs("~/www/VBF/Djet/2016/Djet.png")
+    c1.SaveAs("~/www/VBF/Djet/2016/Djet.eps")
+    c1.SaveAs("~/www/VBF/Djet/2016/Djet.root")
+    c1.SaveAs("~/www/VBF/Djet/2016/Djet.pdf")
 
 class Bin(object):
     def __init__(self, min, max):
@@ -237,10 +237,10 @@ def makeDjettable(massbins, *plots):
     mg.GetXaxis().SetTitle("m_{4l}")
     mg.GetYaxis().SetTitle("fraction of events with D_{jet}>0.5")
     legend.Draw()
-    c1.SaveAs("~/www/VBF/Djet/fraction.png")
-    c1.SaveAs("~/www/VBF/Djet/fraction.eps")
-    c1.SaveAs("~/www/VBF/Djet/fraction.root")
-    c1.SaveAs("~/www/VBF/Djet/fraction.pdf")
+    c1.SaveAs("~/www/VBF/Djet/2016/fraction.png")
+    c1.SaveAs("~/www/VBF/Djet/2016/fraction.eps")
+    c1.SaveAs("~/www/VBF/Djet/2016/fraction.root")
+    c1.SaveAs("~/www/VBF/Djet/2016/fraction.pdf")
 
     print r"\begin{center}"
     print r"\begin{tabular}{ |%s| }" % ("|".join("c" * (len(plots)+1)))

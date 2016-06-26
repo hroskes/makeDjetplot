@@ -104,11 +104,11 @@ def draw(filename):
     #functions["Z+X"].Draw("same")
 
 
-    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits.png")
-    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits.eps")
-    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits.root")
-    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fits.pdf")
+    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fits.png")
+    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fits.eps")
+    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fits.root")
+    c.SaveAs("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fits.pdf")
 
 if __name__ == '__main__':
-    draw("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/fraction.root")
+    draw("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fraction.root")
     dozoom()
