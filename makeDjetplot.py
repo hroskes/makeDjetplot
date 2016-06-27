@@ -1,4 +1,5 @@
 import array
+import CJLSTfiles
 import collections
 import loadlib
 import os
@@ -6,7 +7,8 @@ import ROOT
 import style
 
 class Plot(object):
-    maindir = "root://lxcms03//data3/Higgs/160225/"
+    maindir = "root://lxcms03//data3/Higgs/160624/"
+    bkpmaindir = "root://lxcms03//data3/Higgs/160225/"
     basename = "ZZ4lAnalysis.root"
     min = 0.
     max = 1.
@@ -14,14 +16,26 @@ class Plot(object):
     units = ""
 
     def __init__(self, title, color, *CJLSTdirs, **kwargs):
-        for kwarg in kwargs:
-            if kwarg == "maindir":
-                self.maindir = kwargs[kwarg]
-            elif kwarg == "basename":
-                self.basename = kwargs[kwarg]
+        for kw, kwarg in kwargs.iteritems():
+            if kw == "maindir":
+                self.maindir = kwarg
+            if kw == "bkpmaindir":
+                self.bkpmaindir = kwarg
+            elif kw == "basename":
+                self.basename = kwarg
+            elif kw == "match":
+                CJLSTdirs = list(CJLSTdirs) + CJLSTfiles.listfolders(self.maindir, kwarg)
+                CJLSTdirs = list(set(CJLSTdirs))
             else:
-                raise TypeError("Unknown kwarg: %s=%s" % (kwarg, kwargs[kwarg]))
-        self.filenames = [os.path.join(self.maindir, dir, self.basename) for dir in CJLSTdirs]
+                raise TypeError("Unknown kwarg: %s=%s" % (kw, kwarg))
+        self.filenames = []
+        for dir in CJLSTdirs:
+            maindir = self.maindir
+            if not CJLSTfiles.exists(maindir, dir):
+                maindir = self.bkpmaindir
+            if not CJLSTfiles.exists(maindir, dir):
+                raise ValueError("{} does not exist in {} or {}".format(dir, self.maindir, self.bkpmaindir))
+            self.filenames.append(os.path.join(maindir, dir, self.basename))
         self.title = title
         self.color = color
         self._h = None
@@ -98,7 +112,7 @@ class TreePlot(Plot):
 
 class ZXPlot(Plot):
     def __init__(self, color):
-        Plot.__init__(self, "Z+X", color, "DataTrees_160225", maindir = "fromSimon", basename = "ZZ4lAnalysis_allData.root")
+        Plot.__init__(self, "Z+X", color, "AllData")
 
     def h(self, bins = None, normalize = True):
         if self._h is not None and bins is None:
@@ -236,6 +250,7 @@ def makeDjettable(massbins, *plots):
     mg.Draw("AP")
     mg.GetXaxis().SetTitle("m_{4l}")
     mg.GetYaxis().SetTitle("fraction of events with D_{jet}>0.5")
+    mg.SetMinimum(0)
     legend.Draw()
     c1.SaveAs("~/www/VBF/Djet/2016/fraction.png")
     c1.SaveAs("~/www/VBF/Djet/2016/fraction.eps")
@@ -300,17 +315,17 @@ if __name__ == "__main__":
                  TreePlot("WH",   3,              "WplusH125"),
                  TreePlot("ttH",  4,              "ttH125"),
                  TreePlot("qqZZ", 6,              "ZZTo4l"),
-                 TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", "ggZZ4e", "ggZZ4mu", "ggZZ4tau"),
+                 TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2mu2tau", "ggZZ4e", "ggZZ4mu", "ggZZ4tau", "ggZZ2e2mu", "ggZZ2e2tau"),
                  ZXPlot(7),
                 )
         makeDjetplots(*plots)
     if fortable:
         plots = (
-                 TreePlot("VBF",  1,              "VBFH1000", "VBFH115", "VBFH120", "VBFH124", "VBFH550", "VBFH125", "VBFH126", "VBFH130", "VBFH135", "VBFH140", "VBFH145", "VBFH150", "VBFH155", "VBFH160", "VBFH165", "VBFH170", "VBFH175", "VBFH180", "VBFH190", "VBFH200", "VBFH210", "VBFH230", "VBFH250", "VBFH270", "VBFH300", "VBFH350", "VBFH400", "VBFH450", "VBFH500", "VBFH600", "VBFH700", "VBFH750", "VBFH800", "VBFH900"),
-                 TreePlot("ggH",  2,              "ggH350", "ggH200", "ggH190", "ggH230", "ggH160", "ggH210", "ggH1000", "ggH175", "ggH270", "ggH180", "ggH250", "ggH300", "ggH400", "ggH550", "ggH115", "ggH120", "ggH124", "ggH125", "ggH126", "ggH130", "ggH135", "ggH140", "ggH145", "ggH150", "ggH155", "ggH165", "ggH170", "ggH450"),
-                 TreePlot("ZH",   ROOT.kGreen-6,  "ZH125", "ZH140", "ZH400", "ZH120", "ZH124", "ZH126", "ZH130", "ZH135", "ZH145", "ZH150", "ZH155", "ZH165", "ZH170", "ZH175", "ZH180", "ZH190", "ZH200", "ZH210", "ZH250", "ZH270", "ZH300", "ZH350"),
-                 TreePlot("WH",   3,              "WplusH400", "WplusH175", "WminusH115", "WminusH120", "WminusH124", "WminusH125", "WminusH126", "WminusH130", "WminusH135", "WminusH140", "WminusH145", "WminusH150", "WminusH155", "WminusH160", "WminusH165", "WminusH170", "WminusH175", "WminusH180", "WminusH190", "WminusH200", "WminusH210", "WminusH230", "WminusH250", "WminusH270", "WminusH300", "WminusH350", "WminusH400", "WplusH115", "WplusH120", "WplusH124", "WplusH125", "WplusH130", "WplusH135", "WplusH140", "WplusH145", "WplusH150", "WplusH155", "WplusH160", "WplusH165", "WplusH170", "WplusH180", "WplusH190", "WplusH200", "WplusH210", "WplusH230", "WplusH250", "WplusH270", "WplusH300", "WplusH350"),
-                 TreePlot("ttH",  4,              "ttH130", "ttH115", "ttH124", "ttH125"),
+                 TreePlot("VBF",  1,              match="VBF[0-9]*"),
+                 TreePlot("ggH",  2,              match="ggH[0-9]*"),
+                 TreePlot("ZH",   ROOT.kGreen-6,  match="ZH[0-9]*"),
+                 TreePlot("WH",   3,              match="W(plus|minus)H[0-9]*"),
+                 TreePlot("ttH",  4,              match="ttH[0-9]*"),
                  TreePlot("qqZZ", 6,              "ZZTo4l"),
                  TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", "ggZZ4e", "ggZZ4mu", "ggZZ4tau"),
                  ZXPlot(7),
