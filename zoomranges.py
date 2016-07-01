@@ -1,6 +1,6 @@
 import ROOT
 
-def zoom(filename, axis, xmin, xmax):
+def zoom(filename, axis, xmin, xmax, axis2=None, xmin2=None, xmax2=None):
     f = ROOT.TFile.Open(filename)
     if not f:
         raise IOError("No file %s!" % filename)
@@ -11,6 +11,8 @@ def zoom(filename, axis, xmin, xmax):
     if not multigraph or type(multigraph) != ROOT.TMultiGraph:
         raise IOError("no multigraph in canvas in file " + filename + "!")
 
+    if axis2 != 'y' and axis2 is not None: assert False
+
     if axis == 'x':
         multigraph.GetXaxis().SetLimits(xmin, xmax)
         newfilename = filename.replace(".root", "_%s-%s" % (xmin, xmax))
@@ -19,6 +21,11 @@ def zoom(filename, axis, xmin, xmax):
         multigraph.SetMinimum(-0.005)
         multigraph.SetMaximum(xmax)
         newfilename = filename.replace(".root", "_y%s-%s" % (xmin, xmax))
+    else:
+        assert False
+    if axis2 == 'y':
+        multigraph.SetMinimum(-0.005)
+        multigraph.SetMaximum(xmax2)
 
     c.SaveAs(newfilename+".png")
     c.SaveAs(newfilename+".eps")
@@ -26,12 +33,7 @@ def zoom(filename, axis, xmin, xmax):
     c.SaveAs(newfilename+".pdf")
 
 def dozoom():
-    zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fits.root", 'x', 100, 200)
-    #zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fraction.root", 'x', 100, 200)
-    zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fits.root", 'y', 0, .1)
-    #zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fraction.root", 'y', 0, .1)
-    zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fits_100-200.root", 'y', 0, .1)
-    #zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016/fraction_100-200.root", 'y', 0, .1)
+    zoom("/afs/cern.ch/user/h/hroskes/www/VBF/Djet/2016_2l2q/resolved/fraction.root", 'x', 300, 1500, 'y', 0, 0.5)
 
 if __name__ == "__main__":
     dozoom()

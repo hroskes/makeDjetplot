@@ -7,9 +7,8 @@ import ROOT
 import style
 
 class Plot(object):
-    maindir = "root://lxcms03//data3/Higgs/160624/"
-    bkpmaindir = "root://lxcms03//data3/Higgs/160225/"
-    basename = "ZZ4lAnalysis.root"
+    maindir = "root://eoscms//eos/cms/store/user/covarell/2l2qTrees/160625/"
+    basename = "ZZ2l2qAnalysis_{}.root"
     min = 0.
     max = 1.
     bins = 100
@@ -19,8 +18,6 @@ class Plot(object):
         for kw, kwarg in kwargs.iteritems():
             if kw == "maindir":
                 self.maindir = kwarg
-            if kw == "bkpmaindir":
-                self.bkpmaindir = kwarg
             elif kw == "basename":
                 self.basename = kwarg
             elif kw == "match":
@@ -32,9 +29,7 @@ class Plot(object):
         for dir in CJLSTdirs:
             maindir = self.maindir
             if not CJLSTfiles.exists(maindir, dir):
-                maindir = self.bkpmaindir
-            if not CJLSTfiles.exists(maindir, dir):
-                raise ValueError("{} does not exist in {} or {}".format(dir, self.maindir, self.bkpmaindir))
+                raise ValueError("{} does not exist in {}".format(dir, self.maindir))
             self.filenames.append(os.path.join(maindir, dir, self.basename))
         self.title = title
         self.color = color
@@ -59,7 +54,8 @@ class TreePlot(Plot):
             bins = [Bin(-1, float("inf"))]
         t = ROOT.TChain("ZZTree/candTree")
         for filename in self.filenames:
-            t.Add(filename)
+            for i in range(22):
+                t.Add(filename.format(i))
         print t.GetEntries()
 
         h = {}
@@ -77,26 +73,27 @@ class TreePlot(Plot):
         for i, entry in enumerate(t):
             t.GetEntry(i)
 
-            wt = entry.overallEventWeight
-            #wt = entry.genHEPMCweight
+            wt = entry.genHEPMCweight * entry.PUWeight
 
-            try:
-                Djet = (entry.pvbf_VAJHU_old / (entry.pvbf_VAJHU_old + entry.phjj_VAJHU_old))
-            except ZeroDivisionError:
-                pass
+            for cand, pvbf, phjj, m4l in zip(entry.ZZCandType, entry.pvbf_VAJHU_highestPTJets, entry.phjj_VAJHU_highestPTJets, entry.ZZMass):
+                if cand == 2 and resolved or cand == 1 and not resolved and 2 not in entry.ZZCandType:
+                    try:
+                        Djet = (pvbf / (pvbf + 0.06 * phjj))
+                    except ZeroDivisionError:
+                        pass
+                    for bin in bins:
+                        if bin.min <= m4l < bin.max:
+                            if pvbf >= 0 and phjj >= 0 and not (pvbf == phjj == 0):
+                                h[bin].Fill(Djet, wt)
+                            else:
+                                h[bin].Fill(-1, wt)
 
-            for bin in bins:
-                if bin.min <= entry.ZZMass < bin.max:
-                    if entry.pvbf_VAJHU_old >= 0 and entry.phjj_VAJHU_old >= 0 and not (entry.pvbf_VAJHU_old == entry.phjj_VAJHU_old == 0):
-                        h[bin].Fill(Djet, wt)
-                    else:
-                        h[bin].Fill(-1, wt)
-
-                    sumofweights[bin] += wt
+                            sumofweights[bin] += wt
 
             if (i+1) % 10000 == 0 or i+1 == length:
                 print (i+1), "/", length
 
+        h[bin].Print("all")
         if normalize:
             for bin in bins:
                 try:
@@ -189,10 +186,10 @@ def makeDjetplots(*plots):
     hstack.GetXaxis().SetTitle("D_{jet}")
     hstack.GetYaxis().SetTitle("fraction of events / %s%s" % ((max-min)/bins, " "+units if units else ""))
     legend.Draw()
-    c1.SaveAs("~/www/VBF/Djet/2016/Djet.png")
-    c1.SaveAs("~/www/VBF/Djet/2016/Djet.eps")
-    c1.SaveAs("~/www/VBF/Djet/2016/Djet.root")
-    c1.SaveAs("~/www/VBF/Djet/2016/Djet.pdf")
+    c1.SaveAs("~/www/VBF/Djet/2016_2l2q/{}/Djet.png".format("resolved" if resolved else "merged"))
+    c1.SaveAs("~/www/VBF/Djet/2016_2l2q/{}/Djet.eps".format("resolved" if resolved else "merged"))
+    c1.SaveAs("~/www/VBF/Djet/2016_2l2q/{}/Djet.root".format("resolved" if resolved else "merged"))
+    c1.SaveAs("~/www/VBF/Djet/2016_2l2q/{}/Djet.pdf".format("resolved" if resolved else "merged"))
 
 class Bin(object):
     def __init__(self, min, max):
@@ -252,10 +249,10 @@ def makeDjettable(massbins, *plots):
     mg.GetYaxis().SetTitle("fraction of events with D_{jet}>0.5")
     mg.SetMinimum(0)
     legend.Draw()
-    c1.SaveAs("~/www/VBF/Djet/2016/fraction.png")
-    c1.SaveAs("~/www/VBF/Djet/2016/fraction.eps")
-    c1.SaveAs("~/www/VBF/Djet/2016/fraction.root")
-    c1.SaveAs("~/www/VBF/Djet/2016/fraction.pdf")
+    c1.SaveAs("~/www/VBF/Djet/2016_2l2q/{}/fraction.png".format("resolved" if resolved else "merged"))
+    c1.SaveAs("~/www/VBF/Djet/2016_2l2q/{}/fraction.eps".format("resolved" if resolved else "merged"))
+    c1.SaveAs("~/www/VBF/Djet/2016_2l2q/{}/fraction.root".format("resolved" if resolved else "merged"))
+    c1.SaveAs("~/www/VBF/Djet/2016_2l2q/{}/fraction.pdf".format("resolved" if resolved else "merged"))
 
     print r"\begin{center}"
     print r"\begin{tabular}{ |%s| }" % ("|".join("c" * (len(plots)+1)))
@@ -304,33 +301,22 @@ def printdebug(massbins, *plots):
 
 
 if __name__ == "__main__":
-    forplot = True
+    forplot = False
     fortable = True
     fordebug = False
+    resolved = False
     if forplot:
         plots = (
-                 TreePlot("VBF",  1,              "VBFH125"),
-                 TreePlot("ggH",  2,              "ggH125"),
-                 TreePlot("ZH",   ROOT.kGreen-6,  "ZH125"),
-                 TreePlot("WH",   3,              "WplusH125"),
-                 TreePlot("ttH",  4,              "ttH125"),
-                 TreePlot("qqZZ", 6,              "ZZTo4l"),
-                 TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2mu2tau", "ggZZ4e", "ggZZ4mu", "ggZZ4tau", "ggZZ2e2mu", "ggZZ2e2tau"),
-                 ZXPlot(7),
+                 TreePlot("VBF",  1,              "VBFHiggs1000"),
+                 TreePlot("ggH",  2,              "ggHiggs1000"),
                 )
         makeDjetplots(*plots)
     if fortable:
         plots = (
-                 TreePlot("VBF",  1,              match="VBF[0-9]*"),
-                 TreePlot("ggH",  2,              match="ggH[0-9]*"),
-                 TreePlot("ZH",   ROOT.kGreen-6,  match="ZH[0-9]*"),
-                 TreePlot("WH",   3,              match="W(plus|minus)H[0-9]*"),
-                 TreePlot("ttH",  4,              match="ttH[0-9]*"),
-                 TreePlot("qqZZ", 6,              "ZZTo4l"),
-                 TreePlot("ggZZ", ROOT.kViolet-1, "ggZZ2e2mu", "ggZZ2e2tau", "ggZZ2mu2tau", "ggZZ4e", "ggZZ4mu", "ggZZ4tau"),
-                 ZXPlot(7),
+                 TreePlot("VBF",  1,              match="VBFHiggs[0-9]*"),
+                 TreePlot("ggH",  2,              match="ggHiggs[0-9]*"),
                 )
-        makeDjettable([100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 300, 400, 500, 600, 700, 800, 900, 1000], *plots)
+        makeDjettable([300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000], *plots)
     if fordebug:
         plots = (
                  TreePlot("new", 1,              "VBFH125"),
